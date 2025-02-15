@@ -73,12 +73,12 @@ function generateQuestionHash(question: string, options: string[]): string {
     .toString(36);
 }
 
-// Clean up old cache entries every hour
+// Clean up old cache entries every 30 minutes
 setInterval(() => {
   const currentTime = Date.now();
   sessionQuestions.forEach((questions, key) => {
     const filteredQuestions = questions.filter(
-      (q) => currentTime - q.timestamp < 24 * 60 * 60 * 1000
+      (q) => currentTime - q.timestamp < 12 * 60 * 60 * 1000
     );
     if (filteredQuestions.length === 0) {
       sessionQuestions.delete(key);
@@ -87,9 +87,9 @@ setInterval(() => {
     }
   });
 
-  // Clear used hashes older than 24 hours
+  // Clear used hashes older than 12 hours
   usedHashes.clear();
-}, 60 * 60 * 1000);
+}, 30 * 60 * 1000);
 
 // Format mathematical content
 function formatMathContent(text: string): string {
@@ -123,22 +123,26 @@ function isQuestionSimilar(
   }
 
   return existingQuestions.some((q) => {
-    // Check question text similarity
+    // Check exact question text match only
     if (normalizeQuestionContent(q.questionText) === normalizedNew) return true;
 
-    // Check if options are too similar
-    const normalizedOptions = q.options.map(normalizeQuestionContent);
-    const newWordsSet = new Set(
-      normalizeQuestionContent(newQuestion)
-        .split(" ")
-        .filter((word) => word.length > 3)
+    // Check for significant option overlap
+    const normalizedNewOptions = newOptions.map(normalizeQuestionContent);
+    const existingNormalizedOptions = q.options.map(normalizeQuestionContent);
+
+    const commonOptions = normalizedNewOptions.filter((newOpt) =>
+      existingNormalizedOptions.some(
+        (existingOpt) =>
+          // Check if options are exactly the same or very similar
+          existingOpt === newOpt ||
+          (existingOpt.length > 5 &&
+            newOpt.length > 5 &&
+            (existingOpt.includes(newOpt) || newOpt.includes(existingOpt)))
+      )
     );
 
-    const optionsSimilarity = normalizedOptions.filter((opt) =>
-      Array.from(newWordsSet).some((word) => opt.includes(word))
-    ).length;
-
-    return optionsSimilarity >= 3; // If 3 or more options contain similar words
+    // Return true only if there's significant overlap (more than 2 similar options)
+    return commonOptions.length > 2;
   });
 }
 
@@ -167,6 +171,7 @@ function validateQuestion(question: any): question is Question {
     question.explanation.length > 0
   );
 }
+
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
@@ -264,11 +269,14 @@ export async function POST(req: Request) {
               role: "system",
               content: `You are an expert education AI specialized in creating unique, grade-appropriate questions.
                        Focus on generating questions that test understanding rather than memorization.
-                       Each question should be distinctly different from typical textbook examples.`,
+                       Each question should be distinctly different from typical textbook examples.
+                       Ensure high variation in numbers, contexts, and question structures.`,
             },
             { role: "user", content: prompt },
           ],
-          temperature: 0.9, // Higher temperature for more variation
+          temperature: 1.0,
+          presence_penalty: 0.6,
+          frequency_penalty: 0.6,
           max_tokens: 1024,
           response_format: { type: "json_object" },
         });
