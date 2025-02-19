@@ -50,7 +50,7 @@ const requestSchema = z.object({
   subject: z.enum(["mathematics", "english"]),
   grade: z.number().min(1).max(5),
   topic: z.string(),
-  level: z.enum(["very_easy", "easy", "medium", "hard"]),
+  level: z.enum(["very_easy", "easy", "medium", "challenging", "hard"]),
 });
 
 // Interface for cached questions

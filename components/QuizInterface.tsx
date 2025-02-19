@@ -19,7 +19,13 @@ import CalculatorComponent from "@/components/CalculatorComponent";
 import TopicIntroduction from "@/components/TopicIntroduction";
 import FeedbackDropdown from "@/components/FeedbackDropdown";
 
-const DIFFICULTY_LEVELS = ["very_easy", "easy", "medium", "hard"];
+const DIFFICULTY_LEVELS = [
+  "very_easy",
+  "easy",
+  "medium",
+  "challenging",
+  "hard",
+];
 
 interface TopicDetail {
   title: string;
@@ -95,18 +101,25 @@ export default function QuizInterface({
     <div className="flex items-center gap-2 mb-4">
       <div className="text-sm text-gray-500">Level Progress:</div>
       <div className="flex gap-1">
-        {[...Array(5)].map((_, index) => (
-          <div
-            key={index}
-            className={`w-4 h-4 rounded-full ${
-              index < questionsInCurrentLevel
-                ? index < correctInCurrentLevel
-                  ? "bg-green-500"
-                  : "bg-red-500"
-                : "bg-gray-200"
-            }`}
-          />
-        ))}
+        {[...Array(5)].map((_, index) => {
+          let hasIncorrect = questionsInCurrentLevel > correctInCurrentLevel;
+          let isAfterIncorrect = hasIncorrect && index > correctInCurrentLevel;
+
+          return (
+            <div
+              key={index}
+              className={`w-4 h-4 rounded-full ${
+                index < questionsInCurrentLevel
+                  ? isAfterIncorrect
+                    ? "bg-gray-200"
+                    : index < correctInCurrentLevel
+                    ? "bg-green-500"
+                    : "bg-red-500"
+                  : "bg-gray-200"
+              }`}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -484,7 +497,9 @@ export default function QuizInterface({
               </div>
               <div className="text-lg">
                 {config.displayNames[currentTopic]} (Level:{" "}
-                {DIFFICULTY_LEVELS[difficultyLevel].replace("_", " ")})
+                {DIFFICULTY_LEVELS.indexOf(DIFFICULTY_LEVELS[difficultyLevel]) +
+                  1}
+                )
               </div>
             </div>
             <LevelProgress />
