@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 
-// [Keep GRADE_SUBJECT_CONFIG and types as is...]
 const GRADE_SUBJECT_CONFIG = {
   1: {
     mathematics: {
