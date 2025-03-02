@@ -70,10 +70,10 @@ export default function QuizInterface({
   } = useTopicProgression(config.topics[0]);
 
   const { testReport, updateReport } = useQuizReport();
-const [currentQuestionStats, setCurrentQuestionStats] = useState({
-  attempts: 0,
-  hintUsed: false,
-});
+  const [currentQuestionStats, setCurrentQuestionStats] = useState({
+    attempts: 0,
+    hintUsed: false,
+  });
   const questionStartTime = React.useRef(Date.now());
 
   const timeRemaining = useQuizTimer(testCompleted, () => {
