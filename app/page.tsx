@@ -10,7 +10,7 @@ export default async function Home() {
   if (!session) {
     redirect("/auth/login");
   }
-  console.log({ session });
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-200 to-purple-200 p-6">
