@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -74,7 +74,10 @@ export default function QuizInterface({
     attempts: 0,
     hintUsed: false,
   });
-  const questionStartTime = React.useRef(Date.now());
+
+  const questionStartTime = useRef(Date.now());
+  const isInitialLoad = useRef(true);
+  const lastTopicRef = useRef<string | null>(null);
 
   const timeRemaining = useQuizTimer(testCompleted, () => {
     setTestCompleted(true);
@@ -98,6 +101,37 @@ export default function QuizInterface({
     setError,
     setCurrentQuestion
   );
+
+  // Effect to handle initial topic introduction
+  useEffect(() => {
+    if (isInitialLoad.current && currentTopic) {
+      fetchTopicDetail(currentTopic)
+        .then(() => {
+          markTopicAsSeen(currentTopic);
+          isInitialLoad.current = false;
+        })
+        .catch((error) => {
+          console.error("Failed to fetch initial topic detail:", error);
+        });
+    }
+  }, [currentTopic, fetchTopicDetail, markTopicAsSeen]);
+
+  // Effect to handle topic changes
+  useEffect(() => {
+    if (
+      currentTopic &&
+      (!lastTopicRef.current || lastTopicRef.current !== currentTopic)
+    ) {
+      fetchTopicDetail(currentTopic)
+        .then(() => {
+          markTopicAsSeen(currentTopic);
+          lastTopicRef.current = currentTopic;
+        })
+        .catch((error) => {
+          console.error("Failed to fetch topic detail:", error);
+        });
+    }
+  }, [currentTopic, fetchTopicDetail, markTopicAsSeen]);
 
   // Handle answer submission
   const handleSubmit = React.useCallback(() => {
@@ -168,8 +202,16 @@ export default function QuizInterface({
     }
   };
 
+  // Handle topic introduction close
+  const handleTopicIntroClose = () => {
+    setShowTopicIntro(false);
+    if (!currentQuestion) {
+      fetchNextQuestion(currentTopic, difficultyLevel);
+    }
+  };
+
   // Initialize quiz
-  React.useEffect(() => {
+  useEffect(() => {
     if (!testCompleted) {
       fetchNextQuestion(currentTopic, difficultyLevel);
     }
@@ -182,7 +224,7 @@ export default function QuizInterface({
   }, [testCompleted, currentTopic, difficultyLevel]);
 
   // Complete test effect
-  React.useEffect(() => {
+  useEffect(() => {
     if (testCompleted) {
       onTestComplete(testReport);
     }
@@ -192,6 +234,7 @@ export default function QuizInterface({
     <div className="w-full mx-auto px-4 py-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
+          {/* Timer and Progress Section */}
           <div className="mb-4">
             <div className="flex justify-between items-center mb-2">
               <Timer timeRemaining={timeRemaining} />
@@ -216,6 +259,7 @@ export default function QuizInterface({
             </div>
           </div>
 
+          {/* Error Alert */}
           {error && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{error}</AlertDescription>
@@ -227,6 +271,7 @@ export default function QuizInterface({
             </Alert>
           )}
 
+          {/* Question Section */}
           <QuestionCard
             question={currentQuestion}
             isLoading={isLoading}
@@ -266,14 +311,10 @@ export default function QuizInterface({
           <CalculatorComponent />
         </div>
 
+        {/* Topic Introduction Modal */}
         <TopicIntroduction
           isOpen={showTopicIntro}
-          onClose={() => {
-            setShowTopicIntro(false);
-            if (!currentQuestion) {
-              fetchNextQuestion(currentTopic, difficultyLevel);
-            }
-          }}
+          onClose={handleTopicIntroClose}
           topicName={config.displayNames[currentTopic]}
           topicDetail={topicDetail}
           isLoading={isLoadingTopicDetail}

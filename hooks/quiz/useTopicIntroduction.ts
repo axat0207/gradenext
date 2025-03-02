@@ -1,17 +1,29 @@
-import { useState, useCallback } from "react";
-// import { TopicDetail } from "@/types";
+// hooks/quiz/useTopicIntroduction.ts
+import { useState, useCallback, useEffect } from "react";
+
+interface TopicDetail {
+  title: string;
+  description: string;
+  keyPoints: string[];
+  examples: string[];
+}
 
 export const useTopicIntroduction = (subject: string, grade: number) => {
-  const [showTopicIntro, setShowTopicIntro] = useState(false);
-  const [topicDetail, setTopicDetail] = useState<any | null>(null);
+  const [showTopicIntro, setShowTopicIntro] = useState(true);
+  const [topicDetail, setTopicDetail] = useState<TopicDetail | null>(null);
   const [isLoadingTopicDetail, setIsLoadingTopicDetail] = useState(false);
   const [topicDetailError, setTopicDetailError] = useState<string | null>(null);
   const [seenTopics, setSeenTopics] = useState<Set<string>>(new Set());
 
   const fetchTopicDetail = useCallback(
     async (topic: string) => {
+      if (seenTopics.has(topic)) {
+        return;
+      }
+
       setIsLoadingTopicDetail(true);
       setTopicDetailError(null);
+      setShowTopicIntro(true);
 
       try {
         const response = await fetch("/api/topic-detail", {
@@ -26,7 +38,6 @@ export const useTopicIntroduction = (subject: string, grade: number) => {
 
         const data = await response.json();
         setTopicDetail(data);
-        setShowTopicIntro(true);
       } catch (error) {
         setTopicDetailError(
           error instanceof Error
@@ -37,12 +48,12 @@ export const useTopicIntroduction = (subject: string, grade: number) => {
         setIsLoadingTopicDetail(false);
       }
     },
-    [subject, grade]
+    [subject, grade, seenTopics]
   );
 
-  const markTopicAsSeen = (topic: string) => {
+  const markTopicAsSeen = useCallback((topic: string) => {
     setSeenTopics((prev) => new Set([...prev, topic]));
-  };
+  }, []);
 
   return {
     showTopicIntro,

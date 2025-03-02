@@ -1,3 +1,4 @@
+// components/TopicIntroduction.tsx
 import React, { useState, useEffect } from "react";
 import {
   Dialog,
@@ -23,18 +24,17 @@ interface TopicIntroProps {
   error: string | null;
 }
 
-const TopicIntroduction = ({
+const TopicIntroduction: React.FC<TopicIntroProps> = ({
   isOpen,
   onClose,
   topicName,
   topicDetail,
   isLoading,
   error,
-}: TopicIntroProps) => {
+}) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [currentTopicName, setCurrentTopicName] = useState(topicName);
 
-  // Reset minimized state when topic changes
   useEffect(() => {
     if (topicName !== currentTopicName) {
       setIsMinimized(false);
@@ -50,25 +50,29 @@ const TopicIntroduction = ({
     setIsMinimized(false);
   };
 
-  const handleClose = () => {
-    onClose();
-    setIsMinimized(true);
+  // Handle outside click to minimize instead of close
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      handleMinimize();
+    }
   };
 
-  // Handle dialog state
   const isDialogOpen = isOpen && !isMinimized;
 
   return (
     <>
-      <Dialog
-        open={isDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            handleClose();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col">
+      <Dialog open={isDialogOpen} onOpenChange={handleOpenChange} modal={true}>
+        <DialogContent
+          className="sm:max-w-[600px] max-h-[80vh] overflow-hidden flex flex-col"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+            handleMinimize();
+          }}
+          onEscapeKeyDown={(e) => {
+            e.preventDefault();
+            handleMinimize();
+          }}
+        >
           <DialogHeader className="flex flex-row items-center justify-between">
             <DialogTitle className="text-2xl font-bold">
               Introduction to {topicName}
@@ -127,7 +131,6 @@ const TopicIntroduction = ({
         </DialogContent>
       </Dialog>
 
-      {/* Floating button when minimized */}
       {isMinimized && isOpen && (
         <div className="fixed bottom-4 right-4 z-50">
           <Button
